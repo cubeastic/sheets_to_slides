@@ -21,6 +21,7 @@ class SheetsToSlides:
             exit()
         self.json_format = "https://spreadsheets.google.com/feeds/cells/{0}/1/public/values?alt=json"
         self.full_addr = ""
+        self.jdata = ""
 
     def get_config(self, field):
         t = Et.parse(self.config_file)
@@ -35,15 +36,16 @@ class SheetsToSlides:
         try:
             if requests.get(self.json_format.format(self.extract_id())).status_code == 200:
                 self.full_addr = self.json_format.format(self.extract_id())
+                self.jdata = requests.get(self.full_addr).json()
                 return True
         except ValueError:
             return False
 
     def get_quotes(self):
-        rows = int(requests.get(self.full_addr).json()["feed"]["openSearch$totalResults"]["$t"])
+        rows = int(self.jdata["feed"]["openSearch$totalResults"]["$t"])
         quotes = []
         for quote in range(0, rows):
-            quotes.append(str(requests.get(self.full_addr).json()["feed"]["entry"][quote]["content"]["$t"]))
+            quotes.append(str(self.jdata["feed"]["entry"][quote]["content"]["$t"]))
         return quotes
 
     def sheets_phase(self):
