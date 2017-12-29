@@ -28,7 +28,7 @@ class SheetsToSlides:
         if path.exists(self.config_file):
             self.sheet_addr = self.get_config("google_sheet")
             self.slides_addr = self.get_config("google_slide")
-            self.pics_dir = self.get_config("pics_dir")
+            self.pics_url = self.get_config("pics_url")
         else:
             print("ERROR: xml config file was not found")
             exit()
@@ -38,7 +38,7 @@ class SheetsToSlides:
         self.p_id = ""      # Google Presentation ID
         self.s_id = ""      # Google Slide ID
         self.session = None
-        self.current_time = strftime("%H:%M %d.%m.%Y")
+        self.current_time = strftime("%d.%m.%Y")
         self.quotes = []
 
     # Loop through the config file and return the requested value from the requested tag
@@ -161,7 +161,7 @@ class SheetsToSlides:
                         "pageProperties": {
                             "pageBackgroundFill": {
                                 "stretchedPictureFill": {
-                                    "contentUrl": "http://lorempixel.com/400/200/"
+                                    "contentUrl": self.pics_url
                                 }
                             }
                         },
