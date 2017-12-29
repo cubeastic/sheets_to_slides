@@ -3,17 +3,33 @@ try:
     import requests    # Import the library that allows us to contact the web service
 except ImportError(requests):
     print("Please install the requested module")
+import xml.etree.ElementTree as Et  # Import the function for xml handling
+from sys import exit    # Import the exit function
+from os import path     # Import all the os functions
 
 
 class SheetsToSlides:
 
-    def __init__(self, address):
-        self.address = address
+    def __init__(self):
+        self.config_file = "config.xml"
+        if path.exists(self.config_file):
+            self.sheet_addr = self.get_config("google_sheet")
+            self.slides_addr = self.get_config("google_slide")
+            self.pics_dir = self.get_config("pics_dir")
+        else:
+            print("ERROR: xml config file was not found")
+            exit()
         self.json_format = "https://spreadsheets.google.com/feeds/cells/{0}/1/public/values?alt=json"
         self.full_addr = ""
 
+    def get_config(self, field):
+        t = Et.parse(self.config_file)
+        for i in t.getroot():
+            if i.tag == field:
+                return i.text
+
     def extract_id(self):
-        return self.address.split("/")[5]
+        return self.sheet_addr.split("/")[5]
 
     def published_check(self):
         try:
@@ -37,5 +53,5 @@ class SheetsToSlides:
             print("ERROR: document is not published")
 
 
-a = SheetsToSlides("https://docs.google.com/spreadsheets/d/11_Xr3gSMAkslChwx_in3h0EJVdPHtG5m9Kv7o-WbyTc/edit#gid=0")
+a = SheetsToSlides()
 print(a.sheets_phase())
