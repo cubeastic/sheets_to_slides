@@ -24,18 +24,18 @@ class SheetsToSlides:
             return False
 
     def get_quotes(self):
-        rows = requests.get(self.full_addr).json()["feed"]["openSearch$totalResults"]["$t"]
+        rows = int(requests.get(self.full_addr).json()["feed"]["openSearch$totalResults"]["$t"])
         quotes = []
-        for quote in range(0, int(rows)):
+        for quote in range(0, rows):
             quotes.append(str(requests.get(self.full_addr).json()["feed"]["entry"][quote]["content"]["$t"]))
         return quotes
 
     def sheets_phase(self):
         if self.published_check():
-            print(self.get_quotes())
+            return self.get_quotes()
         else:
             print("ERROR: document is not published")
 
 
 a = SheetsToSlides("https://docs.google.com/spreadsheets/d/11_Xr3gSMAkslChwx_in3h0EJVdPHtG5m9Kv7o-WbyTc/edit#gid=0")
-a.sheets_phase()
+print(a.sheets_phase())
