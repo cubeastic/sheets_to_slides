@@ -27,7 +27,6 @@ class SheetsToSlides:
         self.config_file = "config.xml"
         if path.exists(self.config_file):
             self.sheet_addr = self.get_config("google_sheet")
-            self.slides_addr = self.get_config("google_slide")
             self.pics_url = self.get_config("pics_url")
         else:
             print("ERROR: xml config file was not found")
@@ -37,9 +36,10 @@ class SheetsToSlides:
         self.jdata = ""     # Local Google Sheet JSON data
         self.p_id = ""      # Google Presentation ID
         self.s_id = ""      # Google Slide ID
-        self.session = None
-        self.current_time = strftime("%d.%m.%Y")
-        self.quotes = []
+        self.tbox_id = ""   # Text box ID
+        self.session = None # Google API session ID
+        self.current_time = strftime("%d.%m.%Y")    # Use as the presentations name
+        self.quotes = []    # Hold the list of quotes
 
     # Loop through the config file and return the requested value from the requested tag
     def get_config(self, field):
@@ -150,7 +150,9 @@ class SheetsToSlides:
         body = {
             'requests': requests
         }
-        self.session.presentations().batchUpdate(presentationId=self.p_id, body=body).execute()
+        response = self.session.presentations().batchUpdate(presentationId=self.p_id, body=body).execute()
+        self.tbox_id = response.get('replies')[0].get('createShape').get('objectId')
+        return True if self.tbox_id else False
 
     def change_background(self):
         requests = [
@@ -174,17 +176,51 @@ class SheetsToSlides:
         }
         self.session.presentations().batchUpdate(presentationId=self.p_id, body=body).execute()
 
+    def style_text_box(self):
+        requests = [
+            {
+                'updateTextStyle': {
+                    'objectId': self.tbox_id,
+                    'style': {
+                        'fontFamily': 'Arial',
+                        'fontSize': {
+                            'magnitude': 48,
+                            'unit': 'PT'
+                        },
+                        'foregroundColor': {
+                            'opaqueColor': {
+                                'rgbColor': {
+                                    'blue': 1.0,
+                                    'green': 0.0,
+                                    'red': 0.0
+                                }
+                            }
+                        }
+                    },
+                    'fields': 'foregroundColor,fontFamily,fontSize'
+                }
+            }
+        ]
+        body = {
+            'requests': requests
+        }
+        self.session.presentations().batchUpdate(presentationId=self.p_id, body=body).execute()
+
     def slides_phase(self):
+        # Start by pulling the data from the sheet file
         if self.sheets_phase():
+            # Start talking with Google
             credentials = self.get_credentials()
             http = credentials.authorize(httplib2.Http())
             self.session = discovery.build('slides', 'v1', http=http)
+            # Create the presentation
             if self.create_pst():
                 for q in self.quotes:
+                    # Create the slide and make the magic happen
                     if self.create_slide():
-                        self.create_text_box(q)
+                        if self.create_text_box(q):
+                            self.style_text_box()
                         self.change_background()
-
 
 
 a = SheetsToSlides()
