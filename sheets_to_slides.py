@@ -18,6 +18,7 @@ except ImportError(requests):
 import xml.etree.ElementTree as Et  # Import the function for xml handling
 from sys import exit    # Import the exit function
 from os import path     # Import all the os functions
+from colour import Color    # Import color to translate string to rgb
 
 
 # A class to import text from Google Sheets and export it to Slides with pictures as backgrounds
@@ -28,6 +29,8 @@ class SheetsToSlides:
         if path.exists(self.config_file):
             self.sheet_addr = self.get_config("google_sheet")
             self.pics_url = self.get_config("pics_url")
+            self.font_color = Color(self.get_config("font_color")).rgb
+            self.font_size = self.get_config("font_size")
         else:
             print("ERROR: xml config file was not found")
             exit()
@@ -113,7 +116,7 @@ class SheetsToSlides:
         return True if self.s_id else False
 
     def create_text_box(self, q):
-        element_id = "textbox" + str(randint(1, 100))
+        element_id = "textbox" + str(randint(1, 9999999))
         pt350 = {
             'magnitude': 350,
             'unit': 'PT'
@@ -184,15 +187,15 @@ class SheetsToSlides:
                     'style': {
                         'fontFamily': 'Arial',
                         'fontSize': {
-                            'magnitude': 48,
+                            'magnitude': self.font_size,
                             'unit': 'PT'
                         },
                         'foregroundColor': {
                             'opaqueColor': {
                                 'rgbColor': {
-                                    'blue': 1.0,
-                                    'green': 0.0,
-                                    'red': 0.0
+                                    'blue': self.font_color[0],
+                                    'green': self.font_color[1],
+                                    'red': self.font_color[2]
                                 }
                             }
                         }
@@ -206,7 +209,7 @@ class SheetsToSlides:
         }
         self.session.presentations().batchUpdate(presentationId=self.p_id, body=body).execute()
 
-    def slides_phase(self):
+    def factory(self):
         # Start by pulling the data from the sheet file
         if self.sheets_phase():
             # Start talking with Google
@@ -224,4 +227,4 @@ class SheetsToSlides:
 
 
 a = SheetsToSlides()
-a.slides_phase()
+a.factory()
