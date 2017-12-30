@@ -117,8 +117,12 @@ class SheetsToSlides:
 
     def create_text_box(self, q):
         element_id = "textbox" + str(randint(1, 9999999))
-        pt350 = {
-            'magnitude': 350,
+        height = {
+           'magnitude': 250,
+           'unit': 'PT'
+        }
+        width = {
+            'magnitude': 650,
             'unit': 'PT'
         }
         requests = [
@@ -129,14 +133,14 @@ class SheetsToSlides:
                     'elementProperties': {
                         'pageObjectId': self.s_id,
                         'size': {
-                            'height': pt350,
-                            'width': pt350
+                            'height': height,
+                            'width': width
                         },
                         'transform': {
                             'scaleX': 1,
                             'scaleY': 1,
-                            'translateX': 350,
-                            'translateY': 100,
+                            'translateX': 50,
+                            'translateY': 50,
                             'unit': 'PT'
                         }
                     }
