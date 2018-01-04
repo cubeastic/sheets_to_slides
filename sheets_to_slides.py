@@ -28,7 +28,8 @@ class SheetsToSlides:
         self.config_file = "config.xml"
         if path.exists(self.config_file):
             self.sheet_addr = self.get_config("google_sheet")
-            self.pics_url = self.get_config("pics_url")
+            # self.pics_url = self.get_config("pics_url")
+            self.pics_url = []
             self.font_color = Color(self.get_config("font_color")).rgb
             self.font_size = self.get_config("font_size")
         else:
@@ -41,8 +42,9 @@ class SheetsToSlides:
         self.s_id = ""      # Google Slide ID
         self.tbox_id = ""   # Text box ID
         self.session = None # Google API session ID
-        self.current_time = strftime("%d.%m.%Y")    # Use as the presentations name
+        self.current_time = strftime("%d-%m-%Y")    # Use as the presentations name
         self.quotes = []    # Hold the list of quotes
+        self.creds = None
 
     # Loop through the config file and return the requested value from the requested tag
     def get_config(self, field):
@@ -80,7 +82,10 @@ class SheetsToSlides:
             print("ERROR: document is not published")
 
     def get_credentials(self):
-        SCOPES = 'https://www.googleapis.com/auth/presentations'
+        SCOPES = (
+                    'https://www.googleapis.com/auth/presentations',
+                    'https://www.googleapis.com/auth/drive'
+                 )
         CLIENT_SECRET_FILE = 'client_secret.json'
         APPLICATION_NAME = 'Google Sheets to Slides'
         credential_path = "credentials/cred.json"
@@ -90,6 +95,7 @@ class SheetsToSlides:
         flow.user_agent = APPLICATION_NAME
         if flags:
             creds = tools.run_flow(flow, store, flags)
+            self.creds = creds
         return creds
 
     def create_pst(self):
@@ -162,6 +168,7 @@ class SheetsToSlides:
         return True if self.tbox_id else False
 
     def change_background(self):
+        self.pics_url = self.get_image_files_names_from_drive()
         requests = [
             {
                 'updatePageProperties':
@@ -170,7 +177,7 @@ class SheetsToSlides:
                         "pageProperties": {
                             "pageBackgroundFill": {
                                 "stretchedPictureFill": {
-                                    "contentUrl": self.pics_url
+                                    "contentUrl": self.pics_url[0]
                                 }
                             }
                         },
@@ -212,6 +219,16 @@ class SheetsToSlides:
             'requests': requests
         }
         self.session.presentations().batchUpdate(presentationId=self.p_id, body=body).execute()
+
+    def get_image_files_names_from_drive(self):
+        #credentials = self.get_credentials()
+        http = self.creds.authorize(httplib2.Http())
+        service = discovery.build('drive', 'v3', http=http)
+
+        results = service.files().list(
+            pageSize=10, fields="nextPageToken, files(id, name)").execute()
+        items = results.get('files', [])
+        return items
 
     def factory(self):
         # Start by pulling the data from the sheet file
