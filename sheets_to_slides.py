@@ -221,7 +221,6 @@ class SheetsToSlides:
         self.session.presentations().batchUpdate(presentationId=self.p_id, body=body).execute()
 
     def get_image_files_names_from_drive(self):
-        #credentials = self.get_credentials()
         http = self.creds.authorize(httplib2.Http())
         service = discovery.build('drive', 'v3', http=http)
 
