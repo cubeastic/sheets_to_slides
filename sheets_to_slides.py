@@ -28,8 +28,8 @@ class SheetsToSlides:
         self.config_file = "config.xml"
         if path.exists(self.config_file):
             self.sheet_addr = self.get_config("google_sheet")
-            # self.pics_url = self.get_config("pics_url")
-            self.pics_url = []
+            self.pics_url = self.get_config("pics_url")
+            self.pics_url_list = []
             self.font_color = Color(self.get_config("font_color")).rgb
             self.font_size = self.get_config("font_size")
         else:
@@ -168,7 +168,7 @@ class SheetsToSlides:
         return True if self.tbox_id else False
 
     def change_background(self):
-        self.pics_url = self.get_image_files_names_from_drive()
+        self.pics_url_list = self.get_files_in_folder(self.pics_url)
         requests = [
             {
                 'updatePageProperties':
@@ -177,7 +177,7 @@ class SheetsToSlides:
                         "pageProperties": {
                             "pageBackgroundFill": {
                                 "stretchedPictureFill": {
-                                    "contentUrl": self.pics_url[0]
+                                    "contentUrl": self.pics_url_list[0]
                                 }
                             }
                         },
@@ -220,14 +220,37 @@ class SheetsToSlides:
         }
         self.session.presentations().batchUpdate(presentationId=self.p_id, body=body).execute()
 
-    def get_image_files_names_from_drive(self):
-        http = self.creds.authorize(httplib2.Http())
-        service = discovery.build('drive', 'v3', http=http)
+    def get_files_in_folder(self, folder_id):
+        """Print files belonging to a folder.
 
-        results = service.files().list(
-            pageSize=10, fields="nextPageToken, files(id, name)").execute()
-        items = results.get('files', [])
-        return items
+        Args:
+          service: Drive API service instance.
+          folder_id: ID of the folder to print files from.
+        """
+        http = self.creds.authorize(httplib2.Http())
+        service = discovery.build('drive', 'v1', http=http)
+
+        files_list = []
+        page_token = None
+        while True:
+            try:
+                param = {}
+                if page_token:
+                    param['pageToken'] = page_token
+                children = service.children().list(
+                    folderId=folder_id, **param).execute()
+
+                for child in children.get('items', []):
+                    print 'File Id: %s' % child['id']
+                    files_list.append(child['id'])
+                page_token = children.get('nextPageToken')
+                if not page_token:
+                    break
+            except errors.HttpError, error:
+                print 'An error occurred: %s' % error
+                break
+
+        return files_list
 
     def factory(self):
         # Start by pulling the data from the sheet file
